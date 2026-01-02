@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sekawan Bumi - Monitoring & Carbon Calculator</title>
+
+    <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css' rel='stylesheet' />
+    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCEQzL5fTW9CILJ3_A27t_HfX9ZpRXwV2E&libraries=streetView"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root { 
+            --primary: #059669; --accent: #f59e0b; --danger: #ef4444; 
+            --success: #10b981; --purple: #8b5cf6; --glass: rgba(255, 255, 255, 0.95); 
+        }
+        body, html { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; height: 100%; overflow: hidden; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        
+        /* Header */
+        .page-header { position: absolute; top: 20px; left: 20px; background: var(--glass); padding: 12px 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 10; display: flex; align-items: center; gap: 12px; border: 1px solid #ddd; width: 340px; }
+        .header-logo { width: 45px; height: 45px; background: var(--primary); border-radius: 10px; display: grid; place-items: center; color: white; font-size: 20px; }
+
+        /* Controls */
+        .map-controls { position: absolute; top: 20px; right: 20px; z-index: 10; display: flex; flex-direction: column; gap: 8px; }
+        .ctrl-btn { background: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-weight: bold; font-size: 11px; display: flex; align-items: center; gap: 8px; }
+        .ctrl-btn.active { background: var(--primary); color: white; }
+
+        /* Sidebar Combined (Calculator + Location List) */
+        .sidebar { position: absolute; top: 110px; left: 20px; width: 340px; max-height: 80vh; background: var(--glass); border-radius: 20px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 5; display: flex; flex-direction: column; gap: 10px; border: 1px solid #eee; }
+        
+        /* Carbon Calculator UI (From BumiBaik PDF) */
+        .calc-box { background: #f0fdf4; border-radius: 15px; padding: 12px; border: 1px solid #bbf7d0; margin-bottom: 5px; }
+        .calc-input { width: 100%; padding: 8px; margin: 4px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 11px; box-sizing: border-box; }
+        
+        /* Stats Area */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+        .stat-card { padding: 8px; border-radius: 8px; text-align: center; color: white; font-size: 9px; font-weight: bold; }
+        .stat-total { background: var(--primary); grid-column: span 2; font-size: 11px; }
+        .stat-low { background: var(--success); }
+        .stat-high { background: var(--danger); }
+        .stat-card strong { font-size: 16px; display: block; }
+
+        .category-box { display: flex; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
+        .chip { padding: 5px 10px; background: white; border: 1px solid #ddd; border-radius: 15px; font-size: 10px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .loc-list { overflow-y: auto; flex-grow: 1; padding-right: 5px; scrollbar-width: thin; }
+        .loc-card { background: white; padding: 10px; border-radius: 10px; margin-bottom: 8px; cursor: pointer; border-left: 5px solid #ddd; font-size: 11px; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .loc-card:hover { transform: translateX(5px); }
+
+        /* Modal & 360 View */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-content { width: 90%; max-width: 500px; background: white; border-radius: 20px; padding: 25px; position: relative; }
+        .sv-container { width: 95%; height: 85%; background: black; border-radius: 15px; overflow: hidden; position: relative; }
+        #pano { width: 100%; height: 100%; }
+        .close-btn { position: absolute; top: 15px; right: 15px; z-index: 10001; background: white; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-weight: bold; }
+
+        .pop-img { width: 100%; height: 110px; object-fit: cover; }
+        .pop-body { padding: 10px; }
+        .pop-btn { width: 100%; padding: 8px; margin-top: 5px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        
+        .custom-marker { width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3); cursor: pointer; display: grid; place-items: center; color: white; font-size: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="page-header">
+    <div class="header-logo"><i class="fas fa-leaf"></i></div>
+    <div>
+        <h1 style="margin:0; font-size:15px; font-weight:800; color:#1e293b;">Sekawan Bumi Portal</h1>
+        <p style="margin:0; font-size:10px; color:#64748b;">Mojokerto - Pandaan - Sidoarjo - Surabaya</p>
+    </div>
+</div>
+
+<div class="map-controls">
+    <button id="btn-2d" class="ctrl-btn active" onclick="setMapMode('2d')"><i class="fas fa-map"></i> 2D VIEW</button>
+    <button id="btn-3d" class="ctrl-btn" onclick="setMapMode('3d')"><i class="fas fa-globe-asia"></i> 3D MODE</button>
+</div>
+
+<div class="sidebar">
+    <div class="calc-box">
+        <h3 style="margin:0 0 8px 0; font-size:11px; font-weight:800; color:#065f46;"><i class="fas fa-calculator"></i> KALKULATOR EMISI</h3>
+        <input type="number" id="inp-listrik" class="calc-input" placeholder="Biaya Listrik (Rp/Bulan)">
+        <input type="number" id="inp-bbm" class="calc-input" placeholder="Biaya Bensin (Rp/Bulan)">
+        <input type="number" id="inp-gas" class="calc-input" placeholder="Biaya Gas LPG (Rp/Bulan)">
+        <button onclick="hitungCarbon()" class="btn-main" style="width:100%; background:var(--primary); color:white; border:none; padding:8px; border-radius:8px; font-size:10px; font-weight:bold; cursor:pointer; margin-top:5px;">HITUNG JEJAK KARBON</button>
+        <div id="res-carbon" style="display:none; margin-top:10px; text-align:center; font-size:10px; font-weight:bold; color:#1e293b;">
+            Emisi: <span id="val-emisi">0</span> kg CO2 | Butuh <span id="val-pohon" style="color:var(--danger)">0</span> Pohon
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card stat-total">TOTAL TITIK <strong id="total-count">0</strong></div>
+        <div class="stat-card stat-low">RISIKO RENDAH <strong id="low-count">0</strong></div>
+        <div class="stat-card stat-high">RISIKO TINGGI <strong id="high-count">0</strong></div>
+    </div>
+
+    <div class="category-box">
+        <div class="chip active" onclick="filterWilayah('all', this)">Semua</div>
+        <div class="chip" onclick="filterWilayah('Mojokerto', this)">Mojokerto</div>
+        <div class="chip" onclick="filterWilayah('Pandaan', this)">Pandaan</div>
+        <div class="chip" onclick="filterWilayah('Sidoarjo', this)">Sidoarjo</div>
+        <div class="chip" onclick="filterWilayah('Surabaya', this)">Surabaya</div>
+    </div>
+
+    <div class="loc-list" id="location-list"></div>
+</div>
+
+<div class="modal" id="modalAnalysis">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeModal('modalAnalysis')">X</button>
+        <div id="anaBody"></div>
+    </div>
+</div>
+
+<div class="modal" id="modalSV">
+    <div class="sv-container">
+        <button class="close-btn" onclick="closeModal('modalSV')">X</button>
+        <div id="pano"></div>
+    </div>
+</div>
+
+<script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiYWRlbnNldHlvOTEiLCJhIjoiY21qcng1NGNkNGs3bzNpb3dwN2F4d21iMiJ9.HuxCF8jOGISuEBdyjOJznw';
+
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [112.6500, -7.4500], 
+        zoom: 9.5,
+        projection: 'globe'
+    });
+
+    // --- DATABASE WILAYAH PENANAMAN (Mojokerto, Pandaan, Sidoarjo, Surabaya) ---
+    const dataStore = [
+        { id:1, nama: "Hutan Pinus Pacet", wilayah: "Mojokerto", lat: -7.6713, lng: 112.5385, risk: "Rendah", score: 92, circ: "Penyerapan Karbon Tinggi", img: "https://images.unsplash.com/photo-1448375240587-27f59274b21c?w=400" },
+        { id:2, nama: "Lereng Welirang", wilayah: "Pandaan", lat: -7.6625, lng: 112.6350, risk: "Tinggi", score: 45, circ: "Rawan Longsor - Butuh Reboisasi", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400" },
+        { id:3, nama: "Mangrove Tlocor", wilayah: "Sidoarjo", lat: -7.5615, lng: 112.8350, risk: "Sedang", score: 70, circ: "Ekosistem Pesisir", img: "https://images.unsplash.com/photo-1621460244084-5199c0946227?w=400" },
+        { id:4, nama: "Hutan Kota Wonorejo", wilayah: "Surabaya", lat: -7.3117, lng: 112.8214, risk: "Rendah", score: 85, circ: "Paru-paru Kota", img: "https://images.unsplash.com/photo-1542601906990-b4d3fb773b09?w=400" },
+        { id:5, nama: "Taman Hutan Raya", wilayah: "Mojokerto", lat: -7.7000, lng: 112.5500, risk: "Rendah", score: 88, circ: "Konservasi Flora", img: "https://images.unsplash.com/photo-1511497584788-876760111969?w=400" }
+    ];
+
+    let currentMarkers = [];
+
+    map.on('load', () => {
+        map.setFog({ 'color': 'rgb(200, 230, 200)', 'high-color': 'rgb(5, 150, 105)' });
+        renderData(dataStore);
+    });
+
+    function renderData(data) {
+        currentMarkers.forEach(m => m.remove());
+        currentMarkers = [];
+        const list = document.getElementById("location-list");
+        list.innerHTML = "";
+
+        data.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'custom-marker';
+            let color = item.risk === "Tinggi" ? "var(--danger)" : (item.risk === "Sedang" ? "var(--accent)" : "var(--success)");
+            el.style.backgroundColor = color;
+            el.innerHTML = '<i class="fas fa-tree"></i>';
+
+            const marker = new mapboxgl.Marker(el)
+                .setLngLat([item.lng, item.lat])
+                .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
+                    <div class="popup-wrap">
+                        <img src="${item.img}" class="pop-img">
+                        <div class="pop-body">
+                            <strong style="font-size:11px;">${item.nama}</strong><br>
+                            <button class="pop-btn" style="background:var(--primary); color:white;" onclick="openSV(${item.lat}, ${item.lng})"><i class="fas fa-street-view"></i> 360° VIEW</button>
+                            <button class="pop-btn" style="background:#f1f5f9; color:#475569;" onclick="openAna(${item.id})"><i class="fas fa-shield-alt"></i> ANALISIS RISIKO</button>
+                        </div>
+                    </div>
+                `))
+                .addTo(map);
+            currentMarkers.push(marker);
+
+            const card = document.createElement("div");
+            card.className = `loc-card`;
+            card.style.borderLeft = `5px solid ${color}`;
+            card.innerHTML = `<strong>${item.nama}</strong><br><small>${item.wilayah} • Risiko ${item.risk}</small>`;
+            card.onclick = () => { map.flyTo({ center: [item.lng, item.lat], zoom: 14 }); marker.togglePopup(); };
+            list.appendChild(card);
+        });
+        updateDashboard(data);
+    }
+
+    function hitungCarbon() {
+        const l = document.getElementById('inp-listrik').value || 0;
+        const b = document.getElementById('inp-bbm').value || 0;
+        const g = document.getElementById('inp-gas').value || 0;
+        const emisi = ((l/1500)*0.85) + ((b/13000)*2.3) + ((g/18000)*1.9);
+        const pohon = Math.ceil(emisi / 20);
+        document.getElementById('val-emisi').innerText = emisi.toFixed(1);
+        document.getElementById('val-pohon').innerText = pohon;
+        document.getElementById('res-carbon').style.display = 'block';
+    }
+
+    window.filterWilayah = (wil, el) => {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        const filtered = (wil === 'all') ? dataStore : dataStore.filter(d => d.wilayah === wil);
+        renderData(filtered);
+    };
+
+    function updateDashboard(data) {
+        document.getElementById("total-count").innerText = data.length;
+        document.getElementById("low-count").innerText = data.filter(d => d.risk === "Rendah").length;
+        document.getElementById("high-count").innerText = data.filter(d => d.risk === "Tinggi").length;
+    }
+
+    window.openSV = (lat, lng) => {
+        const svService = new google.maps.StreetViewService();
+        svService.getPanorama({ location: {lat, lng}, radius: 200 }, (data, status) => {
+            if (status === "OK") {
+                document.getElementById("modalSV").style.display = "flex";
+                const pano = new google.maps.StreetViewPanorama(document.getElementById("pano"));
+                pano.setPano(data.location.pano); pano.setVisible(true);
+            } else { alert("Tampilan 360° belum tersedia di titik ini."); }
+        });
+    };
+
+    window.openAna = (id) => {
+        const itm = dataStore.find(d => d.id === id);
+        document.getElementById("anaBody").innerHTML = `
+            <h3 style="margin:0 0 10px 0;">Analisis Risiko: ${itm.nama}</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div style="text-align:center; background:#f8fafc; padding:15px; border-radius:15px; border:1px solid #ddd;">
+                    <div style="font-size:32px; font-weight:800; color:${itm.risk === 'Tinggi' ? 'var(--danger)' : 'var(--success)'}">${itm.score}%</div>
+                    <div style="font-size:10px; font-weight:bold;">SURVIVAL RATE</div>
+                </div>
+                <div style="font-size:11px;">
+                    <strong>Wilayah:</strong><br>${itm.wilayah}<br><br>
+                    <strong>Info Lingkungan:</strong><br>${itm.circ}
+                </div>
+            </div>`;
+        document.getElementById("modalAnalysis").style.display = "flex";
+    };
+
+    window.setMapMode = (mode) => {
+        document.getElementById('btn-2d').classList.toggle('active', mode === '2d');
+        document.getElementById('btn-3d').classList.toggle('active', mode === '3d');
+        if(mode === '3d') {
+            map.setStyle('mapbox://styles/mapbox/satellite-streets-v12');
+            map.easeTo({ pitch: 65, bearing: -15 });
+        } else {
+            map.setStyle('mapbox://styles/mapbox/streets-v12');
+            map.easeTo({ pitch: 0, bearing: 0 });
+        }
+    };
+
+    window.closeModal = (id) => document.getElementById(id).style.display = "none";
+</script>
+</body>
+</html>
