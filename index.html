@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sekawan Bumi - Monitoring Presisi v9.0</title>
+    <title>Sekawan Bumi - Final Precision v16.0</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
@@ -17,23 +17,25 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        #map { height: 350px; width: 100%; border-radius: 2rem; border: 4px solid white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        #map { height: 380px; width: 100%; border-radius: 2rem; border: 4px solid white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .bar-container { position: relative; height: 10px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
         .bar-est { position: absolute; height: 100%; background: #94a3b8; opacity: 0.3; }
-        .bar-real { position: absolute; height: 100%; background: #10b981; transition: width 0.8s ease-in-out; }
+        .bar-real { position: absolute; height: 100%; background: #10b981; transition: width 0.8s; }
+        .gps-active { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body class="bg-slate-50 pb-32">
 
     <header class="bg-green-800 text-white p-6 rounded-b-[2.5rem] shadow-2xl sticky top-0 z-50">
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center text-left">
             <div>
                 <h1 class="text-2xl font-black italic">Sekawan Bumi</h1>
-                <p class="text-[9px] opacity-70 uppercase font-bold tracking-widest text-white">Advanced Monitoring System</p>
+                <p class="text-[9px] opacity-70 uppercase font-bold tracking-widest text-white text-left">Real-Time Geotagging System</p>
             </div>
-            <div id="map-controls" class="flex gap-2">
-                <button onclick="changeStyle('2d')" class="bg-white/20 px-3 py-1 rounded-lg text-[10px] font-bold border border-white/20">2D</button>
-                <button onclick="changeStyle('3d')" class="bg-white/20 px-3 py-1 rounded-lg text-[10px] font-bold border border-white/20">3D</button>
+            <div class="flex gap-2">
+                <button onclick="changeStyle('2d')" class="bg-white/20 px-3 py-1 rounded-lg text-[10px] font-bold">2D</button>
+                <button onclick="changeStyle('3d')" class="bg-white/20 px-3 py-1 rounded-lg text-[10px] font-bold">3D</button>
             </div>
         </div>
     </header>
@@ -44,17 +46,17 @@
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-green-100">
                 <h2 class="font-bold text-green-800 mb-4 text-center text-lg italic underline">Kalkulator Jejak Karbon</h2>
                 <div class="space-y-3">
-                    <input type="number" id="l" oninput="calc()" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" placeholder="Biaya Listrik (Rp/Bln)">
-                    <input type="number" id="b" oninput="calc()" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" placeholder="Biaya Bensin (Rp/Bln)">
-                    <input type="number" id="g" oninput="calc()" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" placeholder="Biaya Gas LPG (Rp/Bln)">
+                    <input type="number" id="l" oninput="hitungEmisi()" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" placeholder="Biaya Listrik (Rp/Bln)">
+                    <input type="number" id="b" oninput="hitungEmisi()" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" placeholder="Biaya Bensin (Rp/Bln)">
+                    <input type="number" id="g" oninput="hitungEmisi()" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" placeholder="Biaya Gas LPG (Rp/Bln)">
                 </div>
-                <div class="mt-6 grid grid-cols-2 gap-4 text-center text-white font-bold">
-                    <div class="p-4 bg-slate-900 rounded-3xl">
-                        <p class="text-[8px] opacity-60 uppercase font-bold">Emisi Karbon</p>
+                <div class="mt-6 grid grid-cols-2 gap-4 text-white font-bold">
+                    <div class="p-4 bg-slate-900 rounded-3xl shadow-xl">
+                        <p class="text-[8px] opacity-60 uppercase font-bold text-center">Emisi Karbon</p>
                         <h4 class="text-2xl font-black"><span id="emisi">0</span> kg</h4>
                     </div>
-                    <div class="p-4 bg-green-600 rounded-3xl">
-                        <p class="text-[8px] opacity-60 uppercase font-bold">Target Tanam</p>
+                    <div class="p-4 bg-green-600 rounded-3xl shadow-xl">
+                        <p class="text-[8px] opacity-60 uppercase font-bold text-center">Target Tanam</p>
                         <h4 class="text-2xl font-black"><span id="pohon">0</span> btg</h4>
                     </div>
                 </div>
@@ -63,210 +65,214 @@
 
         <section id="tab-update" class="tab-content space-y-4">
             <div class="bg-white p-6 rounded-3xl shadow-sm border">
-                <h2 class="font-black text-slate-800 border-b pb-2 mb-4 italic text-center uppercase">Update Laporan Geotagging</h2>
+                <h2 class="font-black text-slate-800 border-b pb-2 mb-4 italic text-center uppercase text-sm">Update Laporan Geotagging</h2>
                 <div class="space-y-4">
                     <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex items-center justify-between">
-                        <div>
-                            <p class="text-[10px] font-bold text-blue-700 uppercase mb-1"><i class="fas fa-map-marker-alt"></i> Koordinat Aktif</p>
-                            <p id="gps-status" class="text-xs font-black text-blue-900 italic">GPS Mencari Titik...</p>
+                        <div class="flex-1 text-left">
+                            <p class="text-[10px] font-bold text-blue-700 uppercase mb-1"><i class="fas fa-satellite gps-active mr-1"></i> Koordinat Presisi</p>
+                            <p id="gps-status" class="text-xs font-black text-blue-900 italic tracking-tighter">Izin GPS dibutuhkan...</p>
                         </div>
-                        <button onclick="getGPS()" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-[10px] font-bold">RE-SCAN</button>
+                        <button onclick="startGPS()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-md active:scale-95 transition">AKTIFKAN GPS</button>
                     </div>
 
-                    <select id="update-jenis-pohon" class="w-full p-4 bg-green-50 text-green-700 font-bold rounded-2xl border-none">
-                        <option>Pohon Sintok (Cinnamomum sintoc)</option>
-                        <option>Pohon Mahoni (Swietenia mahagoni)</option>
-                        <option>Pohon Trembesi (Samanea saman)</option>
-                        <option>Pohon Beringin (Ficus benjamina)</option>
-                        <option>Pohon Pule (Alstonia scholaris)</option>
+                    <select id="update-jenis-pohon" class="w-full p-4 bg-green-50 text-green-700 font-bold rounded-2xl border-none outline-none">
+                        <option>Pohon Beringin</option>
+                        <option>Pohon Sintok</option>
+                        <option>Pohon Mahoni</option>
+                        <option>Pohon Trembesi</option>
+                        <option>Pohon Pule</option>
+                        <option>Pohon Ketapang</option>
                         <option>Pohon Tabebuya</option>
+                        <option>Pohon Pucuk Merah</option>
                     </select>
 
-                    <input type="text" class="w-full p-4 bg-slate-50 rounded-2xl font-bold" placeholder="Scan Barcode ID (Contoh: SB-001)">
-                    <input type="number" class="w-full p-4 bg-slate-50 rounded-2xl" placeholder="Tinggi Real Saat Ini (cm)">
-                    <textarea class="w-full p-4 bg-slate-50 rounded-2xl h-24 outline-none" placeholder="Keterangan Kondisi & Perkembangan Pohon di Lapangan..."></textarea>
+                    <input type="text" class="w-full p-4 bg-slate-50 rounded-2xl font-bold" placeholder="Barcode ID (SB-00x)">
+                    <textarea class="w-full p-4 bg-slate-50 rounded-2xl h-24 outline-none border-none text-sm" placeholder="Catatan perkembangan pohon..."></textarea>
                     
-                    <div onclick="document.getElementById('cam-inp').click()" class="p-6 bg-slate-50 border-2 border-dashed rounded-2xl text-center text-slate-400 cursor-pointer hover:bg-slate-100">
+                    <div onclick="document.getElementById('cam-inp').click()" class="p-6 bg-slate-50 border-2 border-dashed rounded-2xl text-center text-slate-400 cursor-pointer">
                         <i class="fas fa-camera text-2xl mb-1"></i>
-                        <p class="text-[10px] font-bold">KLIK UNTUK AMBIL FOTO POHON</p>
+                        <p class="text-[10px] font-bold uppercase">AMBIL FOTO GEOTAGGING</p>
                         <input type="file" id="cam-inp" class="hidden" accept="image/*" capture="camera">
                     </div>
 
-                    <button onclick="alert('Laporan & Lokasi Berhasil Disimpan!')" class="w-full bg-green-700 text-white font-black py-4 rounded-3xl shadow-xl uppercase tracking-widest">Simpan Laporan</button>
+                    <button onclick="alert('Data Tersimpan!')" class="w-full bg-green-700 text-white font-black py-4 rounded-3xl shadow-xl uppercase">Simpan Laporan</button>
                 </div>
             </div>
         </section>
 
         <section id="tab-monitoring" class="tab-content active space-y-4">
-            
             <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 mb-2">
-                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Monitor Spesies Pohon:</label>
+                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Cari Wilayah Penanaman:</label>
                 <select id="sel-pohon" onchange="syncUI()" class="w-full p-3 mt-1 bg-slate-100 rounded-xl font-bold text-slate-800 outline-none">
-                    <option value="sintok">Pohon Sintok (Mojokerto)</option>
-                    <option value="mahoni">Pohon Mahoni (Pasuruan)</option>
-                    <option value="trembesi">Pohon Trembesi (Sidoarjo)</option>
-                    <option value="beringin">Pohon Beringin (Surabaya)</option>
+                    <option value="beringin">Surabaya (Wonorejo)</option>
+                    <option value="sintok">Mojokerto (Pacet)</option>
+                    <option value="mahoni">Pasuruan (Pandaan)</option>
+                    <option value="trembesi">Sidoarjo (Tlocor)</option>
                 </select>
             </div>
 
-            <div class="relative">
+            <div class="relative bg-white p-2 rounded-[2.2rem] shadow-lg">
                 <div id="map"></div>
-                <div class="absolute top-6 left-6 bg-white/95 backdrop-blur px-4 py-2 rounded-2xl z-10 border border-white shadow-sm">
+                <div class="absolute top-6 left-6 bg-white/95 backdrop-blur px-4 py-2 rounded-2xl z-10 border border-white">
                     <p class="text-[8px] font-bold text-slate-400 uppercase">Wilayah:</p>
-                    <h2 class="text-xs font-black text-slate-800 italic" id="loc-label">Hutan Lindung Pacet</h2>
+                    <h2 class="text-xs font-black text-slate-800 italic" id="loc-label">Wonorejo, Surabaya</h2>
                 </div>
-                <button onclick="openSV()" class="absolute bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-2xl z-20 hover:scale-110 transition">
+                <button onclick="openSV()" class="absolute bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-2xl z-20">
                     <i class="fas fa-street-view text-xl"></i>
                 </button>
             </div>
 
             <div class="bg-white p-5 rounded-3xl border grid grid-cols-4 gap-2 text-center shadow-sm">
-                <div class="bg-green-50 p-2 rounded-2xl border border-green-100"><i class="fas fa-heart text-green-500 text-xs"></i><p class="text-[8px] font-bold uppercase">HIDUP</p><p class="font-black text-green-700" id="s-hidup">0</p></div>
-                <div class="bg-red-50 p-2 rounded-2xl border border-red-100"><i class="fas fa-bolt text-red-500 text-xs text-center"></i><p class="text-[8px] font-bold uppercase text-center">RUSAK</p><p class="font-black text-red-700" id="s-rusak">0</p></div>
-                <div class="bg-orange-50 p-2 rounded-2xl border border-orange-100"><i class="fas fa-sync text-orange-500 text-xs text-center"></i><p class="text-[8px] font-bold uppercase text-center">SULAM</p><p class="font-black text-orange-700" id="s-sulam">0</p></div>
-                <div class="bg-slate-50 p-2 rounded-2xl border border-slate-100"><i class="fas fa-skull text-slate-400 text-xs"></i><p class="text-[8px] font-bold uppercase">MATI</p><p class="font-black text-slate-600" id="s-mati">0</p></div>
+                <div class="bg-green-50 p-2 rounded-2xl text-center"><i class="fas fa-heart text-green-500 text-xs"></i><p class="text-[8px] font-bold uppercase text-center">HIDUP</p><p class="font-black text-green-700" id="s-hidup">0</p></div>
+                <div class="bg-red-50 p-2 rounded-2xl text-center"><i class="fas fa-bolt text-red-500 text-xs text-center"></i><p class="text-[8px] font-bold uppercase text-center">RUSAK</p><p class="font-black text-red-700" id="s-rusak">0</p></div>
+                <div class="bg-orange-50 p-2 rounded-2xl text-center"><i class="fas fa-sync text-orange-500 text-xs text-center"></i><p class="text-[8px] font-bold uppercase text-center">SULAM</p><p class="font-black text-orange-700" id="s-sulam">0</p></div>
+                <div class="bg-slate-50 p-2 rounded-2xl border border-slate-100 text-center"><i class="fas fa-skull text-slate-400 text-xs text-center"></i><p class="text-[8px] font-bold uppercase text-center">MATI</p><p class="font-black text-slate-600" id="s-mati">0</p></div>
             </div>
 
-            <div id="dynamic-monitor-area" class="space-y-4">
-                </div>
+            <div id="dynamic-monitor-area" class="space-y-4"></div>
         </section>
 
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t flex justify-around p-4 z-50 shadow-2xl">
-        <button onclick="switchTab('kalkulator')" id="nav-kalkulator" class="nav-btn flex flex-col items-center gap-1 text-slate-400 transition-all text-center"><i class="fas fa-calculator text-lg"></i><span class="text-[9px] font-bold uppercase">Emisi</span></button>
-        <button onclick="switchTab('update')" id="nav-update" class="nav-btn flex flex-col items-center gap-1 text-slate-400 transition-all text-center"><i class="fas fa-plus-circle text-lg"></i><span class="text-[9px] font-bold uppercase">Update</span></button>
-        <button onclick="switchTab('monitoring')" id="nav-monitoring" class="nav-btn flex flex-col items-center gap-1 text-green-700 transition-all text-center"><i class="fas fa-chart-line text-lg"></i><span class="text-[9px] font-bold uppercase">Monitor</span></button>
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-4 z-50">
+        <button onclick="switchTab('kalkulator')" id="nav-kalkulator" class="nav-btn flex flex-col items-center gap-1 text-slate-400 text-center"><i class="fas fa-calculator text-lg text-center"></i><span class="text-[9px] font-bold uppercase text-center">Emisi</span></button>
+        <button onclick="switchTab('update')" id="nav-update" class="nav-btn flex flex-col items-center gap-1 text-slate-400 text-center"><i class="fas fa-plus-circle text-lg text-center"></i><span class="text-[9px] font-bold uppercase text-center">Update</span></button>
+        <button onclick="switchTab('monitoring')" id="nav-monitoring" class="nav-btn flex flex-col items-center gap-1 text-green-700 text-center"><i class="fas fa-chart-line text-lg text-center"></i><span class="text-[9px] font-bold uppercase text-center">Monitor</span></button>
     </nav>
 
     <div id="modalSV" class="fixed inset-0 bg-black/95 hidden z-[100] p-4 flex flex-col justify-center items-center">
         <button onclick="closeSV()" class="absolute top-6 right-6 text-white text-4xl">&times;</button>
-        <div id="pano" class="w-full h-3/4 rounded-[2.5rem] overflow-hidden"></div>
+        <div id="pano" class="w-full h-3/4 rounded-[2.5rem] overflow-hidden shadow-2xl"></div>
     </div>
 
     <script>
-        // DATABASE LENGKAP 12 BULAN (Sesuai Permintaan)
         const dbMaster = {
+            beringin: {
+                name: "Pohon Beringin", id: "SB-SBY-001", loc: "Wonorejo, Surabaya", lat: -7.3117, lng: 112.8214, risk: "Urban Heat",
+                stats: [85, 2, 1, 0],
+                history: [
+                    { bln: 0, tgl: "10 Jan 2024", real: 150, est: 150, img: "https://images.unsplash.com/photo-1511497584788-876760111969?w=200", ket: "Ditanam di Mangrove Wonorejo." },
+                    { bln: 3, tgl: "15 Apr 2024", real: 180, est: 175, img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=200", ket: "Update: Pertumbuhan cepat dan sehat." }
+                ]
+            },
             sintok: {
-                name: "Pohon Sintok", id: "SB-001", loc: "Hutan Lindung Pacet, Mojokerto", lat: -7.6713, lng: 112.5385, risk: "Longsor Sedang",
+                name: "Pohon Sintok", id: "SB-MJK-005", loc: "Pacet, Mojokerto", lat: -7.6713, lng: 112.5385, risk: "Longsor Sedang",
                 stats: [142, 12, 8, 3],
                 history: [
-                    { bln: 0, tgl: "12 Jan 2024", real: 30, est: 30, img: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=200", ket: "Penanaman pertama dilakukan. Kondisi bibit unggul." },
-                    { bln: 3, tgl: "15 Apr 2024", real: 75, est: 80, img: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=200", ket: "Daun mulai lebat, batang kokoh. Sedikit lambat karena cuaca panas." },
-                    { bln: 6, tgl: "15 Jul 2024", real: 0, est: 120, img: "", ket: "Menunggu Update Data Lapangan" },
-                    { bln: 12, tgl: "12 Jan 2025", real: 0, est: 210, img: "", ket: "Fase Final Pertumbuhan" }
+                    { bln: 0, tgl: "12 Jan 2024", real: 30, est: 30, img: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=200", ket: "Tanam awal blok Pacet." }
                 ]
             },
             mahoni: {
-                name: "Pohon Mahoni", id: "MH-021", loc: "Hutan Cempaka, Pasuruan", lat: -7.6625, lng: 112.6350, risk: "Stabil",
+                name: "Pohon Mahoni", id: "SB-PSR-021", loc: "Pandaan, Pasuruan", lat: -7.6625, lng: 112.6350, risk: "Stabil",
                 stats: [210, 5, 2, 0],
                 history: [
-                    { bln: 0, tgl: "20 Jan 2024", real: 45, est: 45, img: "https://images.unsplash.com/photo-1463123081488-729f3aabee3a?w=200", ket: "Ditanam pada blok B. Tanah sangat subur." },
-                    { bln: 3, tgl: "25 Apr 2024", real: 105, est: 95, img: "https://images.unsplash.com/photo-1599321528623-cae37c44e0b5?w=200", ket: "Tumbuh melampaui estimasi awal. Sangat sehat." }
+                    { bln: 0, tgl: "20 Jan 2024", real: 45, est: 45, img: "https://images.unsplash.com/photo-1463123081488-729f3aabee3a?w=200", ket: "Blok Cempaka Pasuruan." }
                 ]
             },
             trembesi: {
-                name: "Pohon Trembesi", id: "TR-990", loc: "Mangrove Tlocor, Sidoarjo", lat: -7.5615, lng: 112.8350, risk: "Abrasi Tinggi",
+                name: "Pohon Trembesi", id: "SB-SDA-099", loc: "Tlocor, Sidoarjo", lat: -7.5615, lng: 112.8350, risk: "Abrasi",
                 stats: [45, 10, 5, 2],
                 history: [
-                    { bln: 0, tgl: "05 Feb 2024", real: 20, est: 20, img: "https://images.unsplash.com/photo-1621460244084-5199c0946227?w=200", ket: "Pohon penahan ombak pertama di bibir pantai." }
-                ]
-            },
-            beringin: {
-                name: "Pohon Beringin", id: "BR-101", loc: "Hutan Kota Wonorejo, Surabaya", lat: -7.3117, lng: 112.8214, risk: "Aman",
-                stats: [10, 0, 0, 0],
-                history: [
-                    { bln: 0, tgl: "10 Mar 2024", real: 150, est: 150, img: "https://images.unsplash.com/photo-1511497584788-876760111969?w=200", ket: "Ditanam untuk perindang taman kota." }
+                    { bln: 0, tgl: "05 Feb 2024", real: 20, est: 20, img: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=200", ket: "Tanam awal Sidoarjo pesisir." }
                 ]
             }
         };
 
         mapboxgl.accessToken = 'pk.eyJ1IjoiYWRlbnNldHlvOTEiLCJhIjoiY21qcng1NGNkNGs3bzNpb3dwN2F4d21iMiJ9.HuxCF8jOGISuEBdyjOJznw';
         let map;
+        let gpsWatcher = null;
 
         function switchTab(id) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.getElementById('tab-' + id).classList.add('active');
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-green-700', 'text-slate-400'));
             document.getElementById('nav-' + id).classList.replace('text-slate-400', 'text-green-700');
-            if(id === 'monitoring') { setTimeout(initMap, 200); }
-            if(id === 'update') { getGPS(); }
+            if(id === 'monitoring') { setTimeout(initMap, 200); stopGPS(); }
+        }
+
+        // PERBAIKAN GPS: Real-Time High Accuracy Tracking
+        function startGPS() {
+            if (navigator.geolocation) {
+                document.getElementById('gps-status').innerText = "Mencari satelit...";
+                gpsWatcher = navigator.geolocation.watchPosition(
+                    (pos) => {
+                        const lat = pos.coords.latitude.toFixed(6);
+                        const lng = pos.coords.longitude.toFixed(6);
+                        document.getElementById('gps-status').innerText = `Lat: ${lat}, Lng: ${lng} (Akurasi: ${pos.coords.accuracy.toFixed(0)}m)`;
+                    },
+                    (err) => {
+                        document.getElementById('gps-status').innerText = "Akses Lokasi Ditolak/Error.";
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            } else {
+                document.getElementById('gps-status').innerText = "Browser tidak support GPS.";
+            }
+        }
+
+        function stopGPS() {
+            if (gpsWatcher !== null) {
+                navigator.geolocation.clearWatch(gpsWatcher);
+                gpsWatcher = null;
+            }
+        }
+
+        function hitungEmisi() {
+            const list = Number(document.getElementById('l').value) || 0;
+            const bens = Number(document.getElementById('b').value) || 0;
+            const gas = Number(document.getElementById('g').value) || 0;
+            const emisi = ((list/1500)*0.85) + ((bens/13000)*2.3) + ((gas/18000)*1.9);
+            document.getElementById('emisi').innerText = emisi.toFixed(1);
+            document.getElementById('pohon').innerText = Math.ceil(emisi / 2);
         }
 
         function initMap() {
-            const key = document.getElementById('sel-pohon').value;
-            const data = dbMaster[key];
-            map = new mapboxgl.Map({ container: 'map', style: 'mapbox://styles/mapbox/satellite-streets-v12', center: [data.lng, data.lat], zoom: 15, pitch: 45 });
-            new mapboxgl.Marker({color: 'green'}).setLngLat([data.lng, data.lat]).addTo(map);
+            const currentKey = document.getElementById('sel-pohon').value;
+            map = new mapboxgl.Map({ 
+                container: 'map', 
+                style: 'mapbox://styles/mapbox/satellite-streets-v12', 
+                center: [dbMaster[currentKey].lng, dbMaster[currentKey].lat], 
+                zoom: 12, pitch: 45 
+            });
+
+            // Tambahkan PIN untuk semua lokasi
+            Object.keys(dbMaster).forEach(key => {
+                const item = dbMaster[key];
+                new mapboxgl.Marker({ color: key === currentKey ? 'red' : 'green' })
+                    .setLngLat([item.lng, item.lat])
+                    .addTo(map);
+            });
             syncUI();
         }
 
-        // FUNGSI UTAMA SINKRONISASI DATA MONITORING
         function syncUI() {
             const key = document.getElementById('sel-pohon').value;
             const data = dbMaster[key];
-
-            // 1. Update Lokasi & Peta
             document.getElementById('loc-label').innerText = data.loc;
-            if(map) map.flyTo({ center: [data.lng, data.lat], speed: 1.2 });
-
-            // 2. Update Statistik
+            if(map) map.flyTo({ center: [data.lng, data.lat], zoom: 14, speed: 1.5 });
+            
             document.getElementById('s-hidup').innerText = data.stats[0];
             document.getElementById('s-rusak').innerText = data.stats[1];
             document.getElementById('s-sulam').innerText = data.stats[2];
             document.getElementById('s-mati').innerText = data.stats[3];
 
-            // 3. Update Kartu Komparasi & Histori
             const container = document.getElementById('dynamic-monitor-area');
-            container.innerHTML = `
-                <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-6">
-                    <div class="flex justify-between items-center border-b pb-3">
-                        <h3 class="font-black text-slate-800 uppercase text-sm italic">${data.name} #${data.id}</h3>
-                        <p class="text-[10px] font-black text-red-600 uppercase">Risiko: ${data.risk}</p>
-                    </div>
-                    <div id="history-list" class="space-y-6"></div>
-                </div>
-            `;
+            container.innerHTML = `<div class="bg-white p-6 rounded-3xl border shadow-sm space-y-6 text-left">
+                <h3 class="font-black text-slate-800 border-b pb-2 uppercase text-sm">${data.name}</h3>
+                <div id="h-list" class="space-y-6"></div></div>`;
 
-            const list = document.getElementById('history-list');
             data.history.forEach(h => {
-                const isWaiting = h.real === 0;
-                list.innerHTML += `
-                    <div class="space-y-2">
-                        <div class="flex justify-between text-[10px] font-bold uppercase">
-                            <span>Bulan ${h.bln} ${h.bln === 0 ? '(Awal Tanam)' : ''}</span>
-                            <span class="text-slate-400 italic">${h.tgl}</span>
+                document.getElementById('h-list').innerHTML += `<div class="space-y-2">
+                    <p class="text-[10px] font-bold uppercase">Bulan ${h.bln} - ${h.tgl}</p>
+                    <div class="flex gap-4 p-4 bg-green-50 rounded-2xl border border-green-100">
+                        <img src="${h.img}" class="w-16 h-16 rounded-xl object-cover">
+                        <div class="flex-1 space-y-2">
+                            <div class="flex justify-between text-[10px] font-bold"><span>Real: ${h.real}cm</span><span>Est: ${h.est}cm</span></div>
+                            <div class="bar-container"><div class="bar-est" style="width: ${h.est/2.5}%"></div><div class="bar-real" style="width: ${h.real/2.5}%"></div></div>
+                            <p class="text-[9px] text-green-700 leading-tight"><b>Info:</b> ${h.ket}</p>
                         </div>
-                        ${isWaiting ? 
-                            `<div class="py-6 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl text-center italic text-slate-300 font-bold text-[10px] uppercase">Menunggu Update Laporan Lapangan</div>` :
-                            `<div class="flex gap-4 p-4 bg-green-50 rounded-2xl border border-green-100 shadow-sm">
-                                <img src="${h.img}" class="w-16 h-16 rounded-xl object-cover shadow-md">
-                                <div class="flex-1 space-y-2 text-left">
-                                    <div class="flex justify-between text-[10px] font-bold"><span>Real: ${h.real}cm</span><span class="text-slate-400 italic">Est: ${h.est}cm</span></div>
-                                    <div class="bar-container"><div class="bar-est" style="width: ${h.est/2.5}%"></div><div class="bar-real" style="width: ${h.real/2.5}%"></div></div>
-                                    <p class="text-[9px] text-green-700 leading-tight"><b>Catatan:</b> ${h.ket}</p>
-                                </div>
-                            </div>`
-                        }
-                    </div>
-                `;
+                    </div></div>`;
             });
-        }
-
-        function getGPS() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => {
-                    document.getElementById('gps-status').innerText = `Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)} (Aktif)`;
-                }, () => { document.getElementById('gps-status').innerText = "Gagal Mengakses GPS."; });
-            }
-        }
-
-        function calc() {
-            const l = Number(document.getElementById('listrik').value);
-            const b = Number(document.getElementById('bensin').value);
-            const emisi = (l + b) / 15000;
-            document.getElementById('emisi').innerText = (emisi * 2.5).toFixed(1);
-            document.getElementById('pohon').innerText = Math.ceil(emisi);
         }
 
         function changeStyle(m) { map.easeTo({pitch: m === '3d' ? 65 : 0, bearing: m === '3d' ? -20 : 0}); }
@@ -277,7 +283,6 @@
         }
         function closeSV() { document.getElementById('modalSV').classList.add('hidden'); }
 
-        // Start App
         switchTab('monitoring');
     </script>
 </body>
