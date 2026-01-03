@@ -3,286 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sekawan Bumi - Final Precision v16.0</title>
-
+    <title>Sekawan Bumi - All Features v77.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css' rel='stylesheet' />
-    <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_KEY&libraries=streetView"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js'></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));m.head.append(a)}));d[l]?console.warn(p+" only loads once. Re-referencing: "+l):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+            key: "AIzaSyAnPFhG2418CmZy2zwiWpQPNi1Qu1TDb_U", v: "weekly"
+        });
+    </script>
 
     <style>
-        body { font-family: 'Poppins', sans-serif; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.4s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        #map { height: 380px; width: 100%; border-radius: 2rem; border: 4px solid white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .bar-container { position: relative; height: 10px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
-        .bar-est { position: absolute; height: 100%; background: #94a3b8; opacity: 0.3; }
-        .bar-real { position: absolute; height: 100%; background: #10b981; transition: width 0.8s; }
-        .gps-active { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        body { font-family: 'Poppins', sans-serif; background: #f8fafc; }
+        .tab-content { display: none; } .tab-content.active { display: block; }
+        #map { height: 380px; width: 100%; border-radius: 2.5rem; border: 4px solid white; shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        .bar-bg { background: #e2e8f0; height: 8px; border-radius: 10px; overflow: hidden; position: relative; }
+        .bar-fill { background: #10b981; height: 100%; position: absolute; transition: 0.8s; }
     </style>
 </head>
-<body class="bg-slate-50 pb-32">
-
-    <header class="bg-green-800 text-white p-6 rounded-b-[2.5rem] shadow-2xl sticky top-0 z-50">
-        <div class="flex justify-between items-center text-left">
-            <div>
-                <h1 class="text-2xl font-black italic">Sekawan Bumi</h1>
-                <p class="text-[9px] opacity-70 uppercase font-bold tracking-widest text-white text-left">Real-Time Geotagging System</p>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="changeStyle('2d')" class="bg-white/20 px-3 py-1 rounded-lg text-[10px] font-bold">2D</button>
-                <button onclick="changeStyle('3d')" class="bg-white/20 px-3 py-1 rounded-lg text-[10px] font-bold">3D</button>
-            </div>
+<body class="pb-32">
+    <header class="bg-green-800 text-white p-7 rounded-b-[3rem] sticky top-0 z-50 shadow-2xl flex justify-between items-center">
+        <div class="text-left">
+            <h1 class="text-2xl font-black italic tracking-tighter">Sekawan Bumi</h1>
+            <p class="text-[9px] font-bold uppercase tracking-widest opacity-80">Intelligence Geotagging System</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="changeStyle('2d')" class="bg-white/20 px-3 py-1.5 rounded-xl text-[10px] font-black">2D</button>
+            <button onclick="changeStyle('3d')" class="bg-white/20 px-3 py-1.5 rounded-xl text-[10px] font-black">3D</button>
         </div>
     </header>
 
     <main class="container mx-auto p-4 max-w-lg">
+        <section id="tab-monitoring" class="tab-content active space-y-5 text-left">
+            <div class="bg-white p-5 rounded-[2rem] shadow-sm border">
+                <label class="text-[10px] font-black text-slate-400 uppercase">Wilayah Pantauan:</label>
+                <select id="unified-selector" onchange="renderHistory(map, window.lastCloudData)" class="w-full p-4 mt-2 bg-slate-100 rounded-2xl font-bold border-none outline-none text-slate-700"></select>
+            </div>
+
+            <div class="relative bg-white p-2 rounded-[2.5rem] shadow-lg">
+                <div id="map"></div>
+                <button onclick="openSV()" class="absolute bottom-6 right-6 bg-blue-600 text-white p-5 rounded-full shadow-2xl z-20"><i class="fas fa-street-view text-xl"></i></button>
+            </div>
+
+            <div class="grid grid-cols-4 gap-2 text-center font-black">
+                <div class="bg-white p-3 rounded-2xl border text-green-600"><p class="text-[7px] text-slate-400 uppercase">Hidup</p><p id="stat-hidup">0</p></div>
+                <div class="bg-white p-3 rounded-2xl border text-red-600"><p class="text-[7px] text-slate-400 uppercase">Rusak</p><p id="stat-rusak">0</p></div>
+                <div class="bg-white p-3 rounded-2xl border text-orange-600"><p class="text-[7px] text-slate-400 uppercase">Sulam</p><p id="stat-sulam">0</p></div>
+                <div class="bg-white p-3 rounded-2xl border text-slate-600"><p class="text-[7px] text-slate-400 uppercase">Mati</p><p id="stat-mati">0</p></div>
+            </div>
+            <div id="history-display" class="space-y-4"></div>
+        </section>
+
+        <section id="tab-update" class="tab-content space-y-5 text-left">
+            <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border">
+                <div class="bg-blue-50 p-5 rounded-3xl flex justify-between items-center mb-5 border border-blue-100">
+                    <p id="gps-status" class="text-[11px] font-black text-blue-900 italic">Mencari Koordinat GPS...</p>
+                    <button onclick="getGPS()" class="bg-blue-600 text-white px-5 py-2.5 rounded-2xl text-[10px] font-black">SCAN</button>
+                </div>
+                <div class="space-y-4">
+                    <input type="date" id="upd-tgl" class="w-full p-4 bg-slate-100 rounded-2xl font-bold">
+                    <div class="grid grid-cols-2 gap-3">
+                        <select id="upd-periode" onchange="autoEst()" class="p-4 bg-slate-100 rounded-2xl font-bold">
+                            <option value="0">Bulan 0</option><option value="3">Bulan 3</option>
+                            <option value="6">Bulan 6</option><option value="9">Bulan 9</option>
+                            <option value="12">Bulan 12</option>
+                        </select>
+                        <select id="upd-kondisi" class="p-4 bg-yellow-50 rounded-2xl font-bold text-yellow-700">
+                            <option>Hidup</option><option>Rusak</option><option>Sulam</option><option>Mati</option>
+                        </select>
+                    </div>
+                    <select id="update-jenis-pohon" onchange="autoEst()" class="w-full p-4 bg-green-50 text-green-800 font-black rounded-2xl border-none text-xs"></select>
+                    <input type="text" id="upd-barcode" class="w-full p-4 bg-slate-50 rounded-2xl font-bold border-none" placeholder="ID Barcode">
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" id="upd-tinggi" class="w-full p-4 bg-slate-50 rounded-2xl border-none" placeholder="Tinggi Real (cm)">
+                        <input type="number" id="upd-est" class="w-full p-4 bg-blue-100 text-blue-800 font-black rounded-2xl border-none" readonly>
+                    </div>
+                    <textarea id="u-ket" class="w-full p-4 bg-slate-50 rounded-2xl h-16 outline-none text-sm border-none" placeholder="Keterangan kondisi pohon..."></textarea>
+                    <div id="preview-container" class="hidden w-full h-40 border-2 border-dashed rounded-[2rem] overflow-hidden mb-2"><img id="img-preview" class="w-full h-full object-cover"></div>
+                    <input type="file" id="cam-inp" class="hidden" accept="image/*" capture="camera" onchange="previewFoto(event)">
+                    <button onclick="document.getElementById('cam-inp').click()" class="w-full py-4 bg-slate-100 border-2 border-dashed rounded-2xl text-slate-500 font-bold text-[10px] uppercase text-center">AMBIL FOTO GEOTAG</button>
+                    <button id="btn-submit" onclick="prosesKirimLaporan()" class="w-full bg-green-700 text-white font-black py-4 rounded-3xl shadow-xl uppercase">SIMPAN DATA</button>
+                </div>
+            </div>
+        </section>
 
         <section id="tab-kalkulator" class="tab-content space-y-4">
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-green-100">
-                <h2 class="font-bold text-green-800 mb-4 text-center text-lg italic underline">Kalkulator Jejak Karbon</h2>
-                <div class="space-y-3">
-                    <input type="number" id="l" oninput="hitungEmisi()" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" placeholder="Biaya Listrik (Rp/Bln)">
-                    <input type="number" id="b" oninput="hitungEmisi()" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" placeholder="Biaya Bensin (Rp/Bln)">
-                    <input type="number" id="g" oninput="hitungEmisi()" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" placeholder="Biaya Gas LPG (Rp/Bln)">
+            <div class="bg-white p-7 rounded-[2.5rem] border border-green-100 shadow-sm text-center">
+                <h2 class="text-xl font-black text-green-800 mb-8 italic border-b pb-3">Carbon Calculator</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" id="calc-l" oninput="hitungC()" class="p-4 bg-slate-50 rounded-2xl outline-none text-xs" placeholder="Listrik kWh">
+                    <input type="number" id="calc-b" oninput="hitungC()" class="p-4 bg-slate-50 rounded-2xl outline-none text-xs" placeholder="BBM Liter">
+                    <input type="number" id="calc-g" oninput="hitungC()" class="p-4 bg-slate-50 rounded-2xl outline-none text-xs" placeholder="LPG kg">
+                    <input type="number" id="calc-s" oninput="hitungC()" class="p-4 bg-slate-50 rounded-2xl outline-none text-xs" placeholder="Sampah kg">
                 </div>
-                <div class="mt-6 grid grid-cols-2 gap-4 text-white font-bold">
-                    <div class="p-4 bg-slate-900 rounded-3xl shadow-xl">
-                        <p class="text-[8px] opacity-60 uppercase font-bold text-center">Emisi Karbon</p>
-                        <h4 class="text-2xl font-black"><span id="emisi">0</span> kg</h4>
-                    </div>
-                    <div class="p-4 bg-green-600 rounded-3xl shadow-xl">
-                        <p class="text-[8px] opacity-60 uppercase font-bold text-center">Target Tanam</p>
-                        <h4 class="text-2xl font-black"><span id="pohon">0</span> btg</h4>
-                    </div>
+                <div class="mt-10 p-8 bg-slate-900 rounded-[3rem] text-white shadow-xl">
+                    <h3 class="text-5xl font-black my-2"><span id="res-emi">0.0</span> <small class="text-xs">kg CO2e</small></h3>
+                    <p class="text-lg font-bold text-green-400">Target Tanam: <span id="res-poh">0</span> Pohon</p>
                 </div>
             </div>
         </section>
-
-        <section id="tab-update" class="tab-content space-y-4">
-            <div class="bg-white p-6 rounded-3xl shadow-sm border">
-                <h2 class="font-black text-slate-800 border-b pb-2 mb-4 italic text-center uppercase text-sm">Update Laporan Geotagging</h2>
-                <div class="space-y-4">
-                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 flex items-center justify-between">
-                        <div class="flex-1 text-left">
-                            <p class="text-[10px] font-bold text-blue-700 uppercase mb-1"><i class="fas fa-satellite gps-active mr-1"></i> Koordinat Presisi</p>
-                            <p id="gps-status" class="text-xs font-black text-blue-900 italic tracking-tighter">Izin GPS dibutuhkan...</p>
-                        </div>
-                        <button onclick="startGPS()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-md active:scale-95 transition">AKTIFKAN GPS</button>
-                    </div>
-
-                    <select id="update-jenis-pohon" class="w-full p-4 bg-green-50 text-green-700 font-bold rounded-2xl border-none outline-none">
-                        <option>Pohon Beringin</option>
-                        <option>Pohon Sintok</option>
-                        <option>Pohon Mahoni</option>
-                        <option>Pohon Trembesi</option>
-                        <option>Pohon Pule</option>
-                        <option>Pohon Ketapang</option>
-                        <option>Pohon Tabebuya</option>
-                        <option>Pohon Pucuk Merah</option>
-                    </select>
-
-                    <input type="text" class="w-full p-4 bg-slate-50 rounded-2xl font-bold" placeholder="Barcode ID (SB-00x)">
-                    <textarea class="w-full p-4 bg-slate-50 rounded-2xl h-24 outline-none border-none text-sm" placeholder="Catatan perkembangan pohon..."></textarea>
-                    
-                    <div onclick="document.getElementById('cam-inp').click()" class="p-6 bg-slate-50 border-2 border-dashed rounded-2xl text-center text-slate-400 cursor-pointer">
-                        <i class="fas fa-camera text-2xl mb-1"></i>
-                        <p class="text-[10px] font-bold uppercase">AMBIL FOTO GEOTAGGING</p>
-                        <input type="file" id="cam-inp" class="hidden" accept="image/*" capture="camera">
-                    </div>
-
-                    <button onclick="alert('Data Tersimpan!')" class="w-full bg-green-700 text-white font-black py-4 rounded-3xl shadow-xl uppercase">Simpan Laporan</button>
-                </div>
-            </div>
-        </section>
-
-        <section id="tab-monitoring" class="tab-content active space-y-4">
-            <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 mb-2">
-                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Cari Wilayah Penanaman:</label>
-                <select id="sel-pohon" onchange="syncUI()" class="w-full p-3 mt-1 bg-slate-100 rounded-xl font-bold text-slate-800 outline-none">
-                    <option value="beringin">Surabaya (Wonorejo)</option>
-                    <option value="sintok">Mojokerto (Pacet)</option>
-                    <option value="mahoni">Pasuruan (Pandaan)</option>
-                    <option value="trembesi">Sidoarjo (Tlocor)</option>
-                </select>
-            </div>
-
-            <div class="relative bg-white p-2 rounded-[2.2rem] shadow-lg">
-                <div id="map"></div>
-                <div class="absolute top-6 left-6 bg-white/95 backdrop-blur px-4 py-2 rounded-2xl z-10 border border-white">
-                    <p class="text-[8px] font-bold text-slate-400 uppercase">Wilayah:</p>
-                    <h2 class="text-xs font-black text-slate-800 italic" id="loc-label">Wonorejo, Surabaya</h2>
-                </div>
-                <button onclick="openSV()" class="absolute bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-2xl z-20">
-                    <i class="fas fa-street-view text-xl"></i>
-                </button>
-            </div>
-
-            <div class="bg-white p-5 rounded-3xl border grid grid-cols-4 gap-2 text-center shadow-sm">
-                <div class="bg-green-50 p-2 rounded-2xl text-center"><i class="fas fa-heart text-green-500 text-xs"></i><p class="text-[8px] font-bold uppercase text-center">HIDUP</p><p class="font-black text-green-700" id="s-hidup">0</p></div>
-                <div class="bg-red-50 p-2 rounded-2xl text-center"><i class="fas fa-bolt text-red-500 text-xs text-center"></i><p class="text-[8px] font-bold uppercase text-center">RUSAK</p><p class="font-black text-red-700" id="s-rusak">0</p></div>
-                <div class="bg-orange-50 p-2 rounded-2xl text-center"><i class="fas fa-sync text-orange-500 text-xs text-center"></i><p class="text-[8px] font-bold uppercase text-center">SULAM</p><p class="font-black text-orange-700" id="s-sulam">0</p></div>
-                <div class="bg-slate-50 p-2 rounded-2xl border border-slate-100 text-center"><i class="fas fa-skull text-slate-400 text-xs text-center"></i><p class="text-[8px] font-bold uppercase text-center">MATI</p><p class="font-black text-slate-600" id="s-mati">0</p></div>
-            </div>
-
-            <div id="dynamic-monitor-area" class="space-y-4"></div>
-        </section>
-
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-4 z-50">
-        <button onclick="switchTab('kalkulator')" id="nav-kalkulator" class="nav-btn flex flex-col items-center gap-1 text-slate-400 text-center"><i class="fas fa-calculator text-lg text-center"></i><span class="text-[9px] font-bold uppercase text-center">Emisi</span></button>
-        <button onclick="switchTab('update')" id="nav-update" class="nav-btn flex flex-col items-center gap-1 text-slate-400 text-center"><i class="fas fa-plus-circle text-lg text-center"></i><span class="text-[9px] font-bold uppercase text-center">Update</span></button>
-        <button onclick="switchTab('monitoring')" id="nav-monitoring" class="nav-btn flex flex-col items-center gap-1 text-green-700 text-center"><i class="fas fa-chart-line text-lg text-center"></i><span class="text-[9px] font-bold uppercase text-center">Monitor</span></button>
-    </nav>
-
-    <div id="modalSV" class="fixed inset-0 bg-black/95 hidden z-[100] p-4 flex flex-col justify-center items-center">
-        <button onclick="closeSV()" class="absolute top-6 right-6 text-white text-4xl">&times;</button>
-        <div id="pano" class="w-full h-3/4 rounded-[2.5rem] overflow-hidden shadow-2xl"></div>
+    <div id="modalSV" class="fixed inset-0 bg-black hidden z-[100] p-4 flex flex-col items-center justify-center">
+        <button onclick="closeSV()" class="absolute top-8 right-8 text-white text-5xl">&times;</button>
+        <div id="pano" class="w-full h-3/4 rounded-[3rem] overflow-hidden"></div>
     </div>
 
-    <script>
-        const dbMaster = {
-            beringin: {
-                name: "Pohon Beringin", id: "SB-SBY-001", loc: "Wonorejo, Surabaya", lat: -7.3117, lng: 112.8214, risk: "Urban Heat",
-                stats: [85, 2, 1, 0],
-                history: [
-                    { bln: 0, tgl: "10 Jan 2024", real: 150, est: 150, img: "https://images.unsplash.com/photo-1511497584788-876760111969?w=200", ket: "Ditanam di Mangrove Wonorejo." },
-                    { bln: 3, tgl: "15 Apr 2024", real: 180, est: 175, img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=200", ket: "Update: Pertumbuhan cepat dan sehat." }
-                ]
-            },
-            sintok: {
-                name: "Pohon Sintok", id: "SB-MJK-005", loc: "Pacet, Mojokerto", lat: -7.6713, lng: 112.5385, risk: "Longsor Sedang",
-                stats: [142, 12, 8, 3],
-                history: [
-                    { bln: 0, tgl: "12 Jan 2024", real: 30, est: 30, img: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=200", ket: "Tanam awal blok Pacet." }
-                ]
-            },
-            mahoni: {
-                name: "Pohon Mahoni", id: "SB-PSR-021", loc: "Pandaan, Pasuruan", lat: -7.6625, lng: 112.6350, risk: "Stabil",
-                stats: [210, 5, 2, 0],
-                history: [
-                    { bln: 0, tgl: "20 Jan 2024", real: 45, est: 45, img: "https://images.unsplash.com/photo-1463123081488-729f3aabee3a?w=200", ket: "Blok Cempaka Pasuruan." }
-                ]
-            },
-            trembesi: {
-                name: "Pohon Trembesi", id: "SB-SDA-099", loc: "Tlocor, Sidoarjo", lat: -7.5615, lng: 112.8350, risk: "Abrasi",
-                stats: [45, 10, 5, 2],
-                history: [
-                    { bln: 0, tgl: "05 Feb 2024", real: 20, est: 20, img: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=200", ket: "Tanam awal Sidoarjo pesisir." }
-                ]
-            }
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-4 z-50 text-center shadow-2xl">
+        <button onclick="switchTab('monitoring')" class="nav-btn flex flex-col items-center gap-1 text-green-700"><i class="fas fa-chart-line text-xl"></i><span class="text-[10px] font-black uppercase">Monitor</span></button>
+        <button onclick="switchTab('update')" class="nav-btn flex flex-col items-center gap-1 text-slate-400"><i class="fas fa-plus-circle text-xl"></i><span class="text-[10px] font-black uppercase">Input</span></button>
+        <button onclick="switchTab('kalkulator')" class="nav-btn flex flex-col items-center gap-1 text-slate-400"><i class="fas fa-calculator text-xl"></i><span class="text-[10px] font-black uppercase">Emisi</span></button>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAEYztFl15d4xhUCh901Jx19ClQnWHYngo", authDomain: "sekawan-bumi.firebaseapp.com",
+            databaseURL: "https://sekawan-bumi-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "sekawan-bumi", storageBucket: "sekawan-bumi.firebasestorage.app",
+            messagingSenderId: "205645825548", appId: "1:205645825548:web:00e09bce82afe0fdb29029"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const storage = getStorage(app);
+
+        window.treeSpecs = {
+            "Beringin (Ficus benjamina)": { s: 100, g: 8 }, "Sintok (Cinnamomum sintoc)": { s: 30, g: 5 },
+            "Mahoni (Swietenia mahagoni)": { s: 45, g: 10 }, "Trembesi (Samanea saman)": { s: 50, g: 15 },
+            "Pule (Alstonia scholaris)": { s: 80, g: 12 }, "Ketapang (Terminalia catappa)": { s: 40, g: 11 },
+            "Tabebuya (Handroanthus)": { s: 60, g: 7 }, "Pucuk Merah (Syzygium)": { s: 20, g: 4 }
         };
 
+        const treeSel = document.getElementById('update-jenis-pohon');
+        Object.keys(window.treeSpecs).forEach(t => treeSel.innerHTML += `<option>${t}</option>`);
+
+        window.dbMaster = {
+            beringin: { n: "Beringin", loc: "Wonorejo, Surabaya", lat: -7.3117, lng: 112.8214, s: [85, 2, 1, 0], h: [{ t: "10 Jan 2024", r: 150, e: 150, i: "https://images.unsplash.com/photo-1511497584788-876760111969?w=200", k: "Master Surabaya", risk: "Rendah" }] },
+            sintok: { n: "Sintok", loc: "Pacet, Mojokerto", lat: -7.6713, lng: 112.5385, s: [142, 12, 8, 3], h: [{ t: "12 Jan 2024", r: 30, e: 30, i: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=200", k: "Master Mojokerto", risk: "Sedang" }] },
+            mahoni: { n: "Mahoni", loc: "Pandaan, Pasuruan", lat: -7.6625, lng: 112.6350, s: [210, 5, 2, 0], h: [{ t: "20 Jan 2024", r: 45, e: 45, i: "https://images.unsplash.com/photo-1463123081488-729f3aabee3a?w=200", k: "Master Pasuruan", risk: "Rendah" }] },
+            trembesi: { n: "Trembesi", loc: "Tlocor, Sidoarjo", lat: -7.5615, lng: 112.8350, s: [45, 10, 5, 2], h: [{ t: "05 Feb 2024", r: 20, e: 20, i: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=200", k: "Master Sidoarjo", risk: "Tinggi" }] }
+        };
+
+        window.loadUnifiedMonitoring = function(mI) {
+            onValue(ref(db, 'laporan_pohon'), (snap) => {
+                const cloudData = snap.val(); window.lastCloudData = cloudData;
+                const dropdown = document.getElementById('unified-selector');
+                const last = dropdown.value;
+                dropdown.innerHTML = '<optgroup label="-- WILAYAH MASTER --">';
+                Object.keys(window.dbMaster).forEach(k => dropdown.innerHTML += `<option value="statis_${k}">${window.dbMaster[k].loc}</option>`);
+                if(cloudData) {
+                    dropdown.innerHTML += '<optgroup label="-- WILAYAH CLOUD (GPS) --">';
+                    [...new Set(Object.values(cloudData).map(d => d.daerah))].forEach(a => dropdown.innerHTML += `<option value="cloud_${a}">${a}</option>`);
+                }
+                dropdown.value = last || "statis_beringin";
+                window.renderHistory(mI, cloudData);
+            });
+        };
+
+        window.prosesKirimLaporan = async function() {
+            const btn = document.getElementById('btn-submit'); const gps = document.getElementById('gps-status').innerText;
+            const file = document.getElementById('cam-inp').files[0]; const barcode = document.getElementById('upd-barcode').value;
+            if(!barcode || gps.includes("Mencari")) return alert("ID & GPS Wajib!");
+            btn.disabled = true; btn.innerText = "SINKRON...";
+            try {
+                const ll = gps.replace('Lat: ', '').replace('Lng: ', '').split(', ').map(Number);
+                const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${ll[1]},${ll[0]}.json?access_token=${mapboxgl.accessToken}&types=district,place`);
+                const gData = await res.json(); const area = gData.features[0] ? gData.features[0].text : "Area Baru";
+                let url = "https://via.placeholder.com/300";
+                if(file) { const r = sRef(storage, `pohon/${Date.now()}`); await uploadBytes(r, file); url = await getDownloadURL(r); }
+                await push(ref(db, 'laporan_pohon'), {
+                    jenis: document.getElementById('update-jenis-pohon').value, periode: "Bulan " + document.getElementById('upd-periode').value,
+                    kondisi: document.getElementById('upd-kondisi').value, barcode: barcode, daerah: area, 
+                    tgl_update: document.getElementById('upd-tgl').value, tinggi_real: Number(document.getElementById('upd-tinggi').value),
+                    tinggi_est: Number(document.getElementById('upd-est').value), lat: ll[0], lng: ll[1], foto: url, ket: document.getElementById('u-ket').value
+                });
+                alert("Berhasil!"); location.reload();
+            } catch (e) { alert(e.message); btn.disabled = false; }
+        };
+    </script>
+
+    <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoiYWRlbnNldHlvOTEiLCJhIjoiY21qcng1NGNkNGs3bzNpb3dwN2F4d21iMiJ9.HuxCF8jOGISuEBdyjOJznw';
-        let map;
-        let gpsWatcher = null;
+        let map; let markers = [];
 
         function switchTab(id) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.getElementById('tab-' + id).classList.add('active');
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-green-700', 'text-slate-400'));
-            document.getElementById('nav-' + id).classList.replace('text-slate-400', 'text-green-700');
-            if(id === 'monitoring') { setTimeout(initMap, 200); stopGPS(); }
-        }
-
-        // PERBAIKAN GPS: Real-Time High Accuracy Tracking
-        function startGPS() {
-            if (navigator.geolocation) {
-                document.getElementById('gps-status').innerText = "Mencari satelit...";
-                gpsWatcher = navigator.geolocation.watchPosition(
-                    (pos) => {
-                        const lat = pos.coords.latitude.toFixed(6);
-                        const lng = pos.coords.longitude.toFixed(6);
-                        document.getElementById('gps-status').innerText = `Lat: ${lat}, Lng: ${lng} (Akurasi: ${pos.coords.accuracy.toFixed(0)}m)`;
-                    },
-                    (err) => {
-                        document.getElementById('gps-status').innerText = "Akses Lokasi Ditolak/Error.";
-                    },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                );
-            } else {
-                document.getElementById('gps-status').innerText = "Browser tidak support GPS.";
-            }
-        }
-
-        function stopGPS() {
-            if (gpsWatcher !== null) {
-                navigator.geolocation.clearWatch(gpsWatcher);
-                gpsWatcher = null;
-            }
-        }
-
-        function hitungEmisi() {
-            const list = Number(document.getElementById('l').value) || 0;
-            const bens = Number(document.getElementById('b').value) || 0;
-            const gas = Number(document.getElementById('g').value) || 0;
-            const emisi = ((list/1500)*0.85) + ((bens/13000)*2.3) + ((gas/18000)*1.9);
-            document.getElementById('emisi').innerText = emisi.toFixed(1);
-            document.getElementById('pohon').innerText = Math.ceil(emisi / 2);
+            if(id === 'monitoring') { if(!map) setTimeout(initMap, 200); else window.renderHistory(map, window.lastCloudData); }
         }
 
         function initMap() {
-            const currentKey = document.getElementById('sel-pohon').value;
-            map = new mapboxgl.Map({ 
-                container: 'map', 
-                style: 'mapbox://styles/mapbox/satellite-streets-v12', 
-                center: [dbMaster[currentKey].lng, dbMaster[currentKey].lat], 
-                zoom: 12, pitch: 45 
-            });
-
-            // Tambahkan PIN untuk semua lokasi
-            Object.keys(dbMaster).forEach(key => {
-                const item = dbMaster[key];
-                new mapboxgl.Marker({ color: key === currentKey ? 'red' : 'green' })
-                    .setLngLat([item.lng, item.lat])
-                    .addTo(map);
-            });
-            syncUI();
+            if (!map) {
+                map = new mapboxgl.Map({ container: 'map', style: 'mapbox://styles/mapbox/satellite-streets-v12', center: [112.7, -7.5], zoom: 9, pitch: 45 });
+                map.on('load', () => window.loadUnifiedMonitoring(map));
+            }
         }
 
-        function syncUI() {
-            const key = document.getElementById('sel-pohon').value;
-            const data = dbMaster[key];
-            document.getElementById('loc-label').innerText = data.loc;
-            if(map) map.flyTo({ center: [data.lng, data.lat], zoom: 14, speed: 1.5 });
-            
-            document.getElementById('s-hidup').innerText = data.stats[0];
-            document.getElementById('s-rusak').innerText = data.stats[1];
-            document.getElementById('s-sulam').innerText = data.stats[2];
-            document.getElementById('s-mati').innerText = data.stats[3];
+        window.renderHistory = function(mI, cloudData) {
+            const selector = document.getElementById('unified-selector').value;
+            const display = document.getElementById('history-display');
+            display.innerHTML = ""; markers.forEach(m => m.remove()); markers = [];
+            let sh=0, sr=0, ss=0, sm=0;
 
-            const container = document.getElementById('dynamic-monitor-area');
-            container.innerHTML = `<div class="bg-white p-6 rounded-3xl border shadow-sm space-y-6 text-left">
-                <h3 class="font-black text-slate-800 border-b pb-2 uppercase text-sm">${data.name}</h3>
-                <div id="h-list" class="space-y-6"></div></div>`;
+            if (selector.startsWith('statis_')) {
+                const k = selector.replace('statis_', ''); const d = window.dbMaster[k];
+                mI.flyTo({ center: [d.lng, d.lat], zoom: 14 });
+                markers.push(new mapboxgl.Marker({color: '#10b981'}).setLngLat([d.lng, d.lat]).addTo(mI));
+                sh=d.s[0]; sr=d.s[1]; ss=d.s[2]; sm=d.s[3];
+                display.innerHTML = `<div class="bg-white p-5 rounded-3xl border text-left"><p class="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">${d.loc}</p>${d.h.map(h => `<div class="flex gap-4 p-4 bg-green-50 rounded-2xl border mb-3"><img src="${h.i}" class="w-16 h-16 rounded-xl object-cover shadow-sm"><div class="flex-1 text-left"><div class="flex justify-between items-center"><p class="text-[10px] font-bold">Histori: ${h.t}</p><span class="text-[8px] bg-green-200 px-2 rounded-lg font-black uppercase">Resiko: ${h.risk}</span></div><p class="text-[9px] text-green-700 italic">"${h.k}"</p></div></div>`).join('')}</div>`;
+            } else if(cloudData && selector.startsWith('cloud_')) {
+                const area = selector.replace('cloud_', '');
+                const filtered = Object.values(cloudData).filter(c => c.daerah === area);
+                mI.flyTo({ center: [filtered[0].lng, filtered[0].lat], zoom: 15 });
+                filtered.forEach(f => {
+                    markers.push(new mapboxgl.Marker({color: 'red'}).setLngLat([f.lng, f.lat]).addTo(mI));
+                    if(f.kondisi === 'Hidup') sh++; else if(f.kondisi === 'Rusak') sr++; else if(f.kondisi === 'Sulam') ss++; else if(f.kondisi === 'Mati') sm++;
+                    const diff = ((f.tinggi_real / f.tinggi_est) * 100).toFixed(0);
+                    const riskLevel = diff < 50 ? "Tinggi" : (diff < 80 ? "Sedang" : "Rendah");
+                    display.innerHTML += `<div class="bg-white p-5 rounded-3xl border shadow-sm text-left mb-3"><p class="text-[9px] font-bold text-blue-500 uppercase mb-2">GPS UPDATE: ${f.tgl_update}</p><div class="flex gap-4 p-4 bg-blue-50/50 rounded-2xl border"><img src="${f.foto}" class="w-16 h-16 rounded-xl object-cover shadow-sm"><div class="flex-1 text-left"><div class="flex justify-between text-[10px] font-black"><span>${f.periode}</span><span class="${riskLevel === 'Tinggi' ? 'text-red-600' : 'text-blue-700'} uppercase font-bold">Resiko: ${riskLevel}</span></div><div class="bar-bg mt-1"><div class="bar-fill" style="width:${diff}%"></div></div><p class="text-[9px] font-bold mt-1 uppercase">${f.jenis} (${f.barcode})</p><p class="text-[8px] text-slate-500 italic mt-1 font-bold text-left">Ket: "${f.ket}"</p></div></div></div>`;
+                });
+            }
+            document.getElementById('stat-hidup').innerText = sh; document.getElementById('stat-rusak').innerText = sr;
+            document.getElementById('stat-sulam').innerText = ss; document.getElementById('stat-mati').innerText = sm;
+        };
 
-            data.history.forEach(h => {
-                document.getElementById('h-list').innerHTML += `<div class="space-y-2">
-                    <p class="text-[10px] font-bold uppercase">Bulan ${h.bln} - ${h.tgl}</p>
-                    <div class="flex gap-4 p-4 bg-green-50 rounded-2xl border border-green-100">
-                        <img src="${h.img}" class="w-16 h-16 rounded-xl object-cover">
-                        <div class="flex-1 space-y-2">
-                            <div class="flex justify-between text-[10px] font-bold"><span>Real: ${h.real}cm</span><span>Est: ${h.est}cm</span></div>
-                            <div class="bar-container"><div class="bar-est" style="width: ${h.est/2.5}%"></div><div class="bar-real" style="width: ${h.real/2.5}%"></div></div>
-                            <p class="text-[9px] text-green-700 leading-tight"><b>Info:</b> ${h.ket}</p>
-                        </div>
-                    </div></div>`;
-            });
-        }
-
-        function changeStyle(m) { map.easeTo({pitch: m === '3d' ? 65 : 0, bearing: m === '3d' ? -20 : 0}); }
-        function openSV() {
-            const data = dbMaster[document.getElementById('sel-pohon').value];
-            document.getElementById('modalSV').classList.remove('hidden');
-            new google.maps.StreetViewPanorama(document.getElementById('pano'), { position: {lat: data.lat, lng: data.lng} });
-        }
-        function closeSV() { document.getElementById('modalSV').classList.add('hidden'); }
-
+        window.getGPS = () => { if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(p => { document.getElementById('gps-status').innerText = `Lat: ${p.coords.latitude.toFixed(6)}, Lng: ${p.coords.longitude.toFixed(6)}`; }, null, {enableHighAccuracy: true}); } };
+        window.previewFoto = (e) => { const f = e.target.files[0]; if(f) { const r = new FileReader(); r.onload = (ev) => { document.getElementById('img-preview').src = ev.target.result; document.getElementById('preview-container').classList.remove('hidden'); }; r.readAsDataURL(f); } };
+        window.autoEst = () => { const s = document.getElementById('update-jenis-pohon').value; const b = parseInt(document.getElementById('upd-periode').value) || 0; const c = window.treeSpecs[s]; document.getElementById('upd-est').value = c.s + (b * c.g); };
+        window.changeStyle = (m) => { map.easeTo({ pitch: m === '3d' ? 65 : 0, bearing: m === '3d' ? -20 : 0 }); };
+        window.hitungC = () => { const l=(Number(document.getElementById('calc-l').value)||0)*0.85, b=(Number(document.getElementById('calc-b').value)||0)*2.3, g=(Number(document.getElementById('calc-g').value)||0)*2.9, s=(Number(document.getElementById('calc-s').value)||0)*30*0.19; const e=l+b+g+s; document.getElementById('res-emi').innerText=e.toFixed(1); document.getElementById('res-poh').innerText=Math.ceil(e/2.1); };
+        window.openSV = async () => { 
+            const val = document.getElementById('unified-selector').value; let lat, lng;
+            if(val.startsWith('statis_')) { const m = window.dbMaster[val.replace('statis_', '')]; lat = m.lat; lng = m.lng; } 
+            else if(window.lastCloudData) { const area = val.replace('cloud_', ''); const f = Object.values(window.lastCloudData).find(c => c.daerah === area); lat = f.lat; lng = f.lng; }
+            document.getElementById('modalSV').classList.remove('hidden'); 
+            const {StreetViewPanorama} = await google.maps.importLibrary("streetView"); new StreetViewPanorama(document.getElementById('pano'), { position: {lat: lat, lng: lng} }); 
+        };
+        window.closeSV = () => { document.getElementById('modalSV').classList.add('hidden'); };
         switchTab('monitoring');
     </script>
 </body>
